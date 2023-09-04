@@ -3,7 +3,7 @@ import { Outlet }from "react-router-dom";
 function Public (){
     return(
         <>
-            <div className="bg-yellow">
+            <div className="bg-yellow ">
                 <div className="container signUpPage vhContainer">
                 <div className="side">
                     <img className="logoImg" src="/logo.png" alt="logo" />
