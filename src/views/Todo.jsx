@@ -9,7 +9,9 @@ function Todo (){
     const [todos,setTodos] = useState([]);
     const [nickname,setNickname] = useState('');
     const [filterTodos,setFilterTodos] = useState([]);
-    const [newTodo,setNewTodo]=useState('')
+    const [newTodo,setNewTodo]=useState('');
+    const [tabStatus, setTabStatus] = useState('all');
+    const [notFinish, setNotFinish] = useState(0)
 
     const token = document.cookie
     .split('; ')
@@ -20,6 +22,24 @@ function Todo (){
         checkout()
     },[]);
 
+    useEffect(()=>{
+        if(tabStatus === 'all'){
+            setFilterTodos(todos);
+        }
+        else if(tabStatus === 'notFinish'){
+            const notFinish = todos.filter((i)=> i.status ===false)
+            setFilterTodos(notFinish)
+        }
+        else if(tabStatus === 'finish'){
+            const finish = todos.filter((i)=> i.status === true)
+            setFilterTodos(finish)
+        }
+    },[tabStatus,todos])
+
+    useEffect(()=>{
+        const notFinsiItem = todos.filter((i)=> i.status === true);
+        setNotFinish(notFinsiItem.length)
+    },[todos])
 
 
     const checkout = async()=>{
@@ -44,7 +64,7 @@ function Todo (){
                     Authorization:token
                 }
             });
-            console.log(res.data.data)
+            //console.log(res.data.data)
             setTodos(res.data.data)
         } catch (error) {
             console.log(error)
@@ -69,10 +89,53 @@ function Todo (){
             setNewTodo('');
             getTodos()
         } catch (error) {
+            alert(error.response.data.message)
+        }
+    }
+
+    const finishTodo =async(id)=>{
+        try {
+            const res = await axios.patch(`${VITE_APP_HOST}/todos/${id}/toggle`,
+            {},
+            {
+                headers:{
+                    Authorization:token
+                }
+            });
+            getTodos();
+            console.log(res)
+        } catch (error) {
             console.log(error)
         }
     }
 
+    const deleteTodo = async(id)=>{
+        try {
+            const res = await axios.delete(`${VITE_APP_HOST}/todos/${id}`,{
+                headers:{
+                    Authorization:token
+                }
+            });
+            getTodos()
+        } catch (error) {
+            console.log(error)
+        }
+        
+    }
+
+
+
+    const clearFinishItem = ()=>{
+        todos.filter((i)=>{
+            if(i.status){
+                deleteTodo(i.id) 
+            }
+        })
+    }
+
+    const handleLogout = ()=>{
+        navigate('/')
+    }
 
 
     return (
@@ -81,8 +144,11 @@ function Todo (){
             <nav>
                 <h1><a href="#">ONLINE TODO LIST</a></h1>
                 <ul>
-                    <li className="todo_sm"><a href="#"><span>{nickname}的代辦</span></a></li>
-                    <li><a href="#loginPage">登出</a></li>
+                    <li className="todo_sm"><span>{nickname}的代辦</span></li>
+                    <li><a href="#" onClick={(e)=>{
+                        e.preventDefault();
+                        handleLogout()
+                    }}>登出</a></li>
                 </ul>
             </nav>
             <div className="conatiner todoListPage vhContainer">
@@ -95,14 +161,24 @@ function Todo (){
                         e.preventDefault();
                         addTodo();
                     }}>
-                        <i className="fa fa-plus"></i>
+                        <i className="fa fa-plus">+</i>
+                        {/* <img src="/vite-HW4/public/delete.jpg" alt="" /> */}
                     </a>
                 </div>
                 <div className="todoList_list">
                     <ul className="todoList_tab">
-                        <li><a href="#" className="active">全部</a></li>
-                        <li><a href="#">待完成</a></li>
-                        <li><a href="#">已完成</a></li>
+                        <li><a href="#" className={tabStatus === 'all' ? 'active':''} onClick={(e)=>{
+                            e.preventDefault();
+                            setTabStatus('all')
+                        }}>全部</a></li>
+                        <li><a href="#" className={tabStatus === 'notFinish' ?'active':''} onClick={(e)=>{
+                            e.preventDefault();
+                            setTabStatus('notFinish')
+                        }}>待完成</a></li>
+                        <li><a href="#" className={tabStatus === 'finish' ?'active':''} onClick={(e)=>{
+                            e.preventDefault();
+                            setTabStatus('finish')
+                        }}>已完成</a></li>
                     </ul>
                     <div className="todoList_items">
                         <ul className="todoList_item">
@@ -115,19 +191,26 @@ function Todo (){
                                 return(
                                     <li key={todo.id}>
                                         <label class="todoList_label">
-                                            <input class="todoList_input" type="checkbox" value="true" />
+                                            <input class="todoList_input" type="checkbox" checked={todo.status} onChange={()=>finishTodo(todo.id)}/>
                                             <span>{todo.content}</span>
                                         </label>
-                                        <a href="#" >
-                                            <i class="fa fa-times"></i>
+                                        <a href="#" onClick={(e)=>{
+                                            e.preventDefault();
+                                            deleteTodo(todo.id)
+                                        }}>
+                                            <img src="delete.jpg" alt="" />
+                                            {/* <i class="fa fa-times"></i> */}
                                         </a>
                                     </li>
                                 )
                             })}
                         </ul>
                         <div className="todoList_statistics">
-                            <p> 5 個已完成項目</p>
-                            <a href="#">清除已完成項目</a>
+                            <p> {notFinish} 個已完成項目</p>
+                            <a href="#" onClick={(e)=>{
+                                e.preventDefault();
+                                clearFinishItem();
+                            }}>清除已完成項目</a>
                         </div>
                     </div>
                 </div>
